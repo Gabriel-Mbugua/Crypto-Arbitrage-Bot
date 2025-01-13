@@ -1,7 +1,5 @@
 import { dexListener } from "./src/listener/index.js";
 
-// dexListener.monitorPrices({ network: "base" }).then((res) => console.log(res));
-
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
