@@ -7,6 +7,8 @@ const port = process.env.PORT || 3000;
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
+let monitoringInterval;
+
 const monitorArbitrage = async () => {
     const params = {
         network: "base",
@@ -23,8 +25,6 @@ const monitorArbitrage = async () => {
         console.error("Error monitoring arbitrage:", error);
     }
 };
-const INTERVAL_MS = 60 * 1000; // Run every 60 seconds
-setInterval(monitorArbitrage, INTERVAL_MS);
 
 const startBot = () => {
     console.log("Starting bot monitoring...");
@@ -44,10 +44,6 @@ app.get("/", (req, res) => {
 app.get("/start", (req, res) => {
     startBot();
     res.send("Bot monitoring started");
-});
-
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
 });
 
 // Start the server
