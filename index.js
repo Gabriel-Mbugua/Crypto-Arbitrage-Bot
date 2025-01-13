@@ -8,7 +8,6 @@ const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
 const monitorArbitrage = async () => {
-    console.log("Initializing bot...");
     const params = {
         network: "base",
         tokenIn: USDC_ADDRESS,
@@ -27,13 +26,66 @@ const monitorArbitrage = async () => {
 const INTERVAL_MS = 60 * 1000; // Run every 60 seconds
 setInterval(monitorArbitrage, INTERVAL_MS);
 
-monitorArbitrage();
+const startBot = () => {
+    console.log("Starting bot monitoring...");
+    // Clear any existing interval
+    if (monitoringInterval) clearInterval(monitoringInterval);
+    // Start immediate first run
+    monitorArbitrage();
+    // Set up interval
+    monitoringInterval = setInterval(monitorArbitrage, 60 * 1000);
+};
 
-// Add basic health check endpoint
 app.get("/", (req, res) => {
     res.send("Bot is running");
 });
 
+// manually start the bot
+app.get("/start", (req, res) => {
+    startBot();
+    res.send("Bot monitoring started");
+});
+
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+});
+
+// Start the server
+const server = app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+    // Start the bot when server starts
+    startBot();
+});
+
+// Handle graceful shutdown
+process.on("SIGTERM", () => {
+    console.log("SIGTERM received. Performing graceful shutdown...");
+    if (monitoringInterval) clearInterval(monitoringInterval);
+    server.close(() => {
+        console.log("Server closed");
+        process.exit(0);
+    });
+});
+
+process.on("SIGINT", () => {
+    console.log("SIGINT received. Performing graceful shutdown...");
+    if (monitoringInterval) clearInterval(monitoringInterval);
+    server.close(() => {
+        console.log("Server closed");
+        process.exit(0);
+    });
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception:", err);
+    // Restart the bot
+    startBot();
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at:", promise, "reason:", reason);
+    // Restart the bot
+    startBot();
 });
