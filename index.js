@@ -1,4 +1,8 @@
+import express from "express";
 import { dexListener } from "./src/listener/index.js";
+
+const app = express();
+const port = process.env.PORT || 3000;
 
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -24,3 +28,12 @@ const INTERVAL_MS = 60 * 1000; // Run every 60 seconds
 setInterval(monitorArbitrage, INTERVAL_MS);
 
 monitorArbitrage();
+
+// Add basic health check endpoint
+app.get("/", (req, res) => {
+    res.send("Bot is running");
+});
+
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
