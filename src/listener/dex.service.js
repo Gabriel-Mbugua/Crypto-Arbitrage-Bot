@@ -136,13 +136,14 @@ export const swapTokens = async ({ network, tokenIn, tokenOut, amountIn, dex }) 
         ]);
 
         const amountInWei = ethers.parseUnits(amountIn.toString(), tokenInDecimals);
-
         console.log(`${tokenInSymbol} balance: ${ethers.formatUnits(tokenInBalance, tokenInDecimals)}`);
         console.log(`${tokenOutSymbol} balance: ${ethers.formatUnits(tokenOutBalance, tokenOutDecimals)}`);
         console.log(`${tokenInSymbol} allowance: ${ethers.formatUnits(tokenInAllowance, tokenInDecimals)}`);
 
         if (tokenInAllowance < amountInWei) {
-            const approveTx = await tokenInContract.approve(routerAddress, amountInWei);
+            let approvalAmount = parseFloat(tokenInDecimals.toString()) === 18 ? 0.1 : 20;
+            const approvalMax = ethers.parseUnits(approvalAmount.toString(), tokenInDecimals);
+            const approveTx = await tokenInContract.approve(routerAddress, approvalMax);
             await approveTx.wait();
             console.log("Approval transaction hash:", approveTx.hash);
         }
