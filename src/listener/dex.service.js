@@ -13,19 +13,19 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
         ]);
 
         const priceDiff = Math.abs(uniswapPool.price - pancakePool.price);
-        const MIN_PROFIT_THRESHOLD = 0.2;
+        const MIN_PROFIT_THRESHOLD = 0.1;
 
         // Determine which DEX to buy from and sell to
         let buyDex = "uniswap";
         let sellDex = "pancake";
-        let buyPrice = uniswapPool.price;
-        let sellPrice = pancakePool.price;
+        let buyPrice = uniswapPool.price * (1 + 0.0005);
+        let sellPrice = pancakePool.price * (1 - 0.0001);
 
         if (pancakePool.price < uniswapPool.price) {
             buyDex = "pancake";
             sellDex = "uniswap";
-            buyPrice = pancakePool.price;
-            sellPrice = uniswapPool.price;
+            buyPrice = pancakePool.price * (1 + 0.0001);
+            sellPrice = uniswapPool.price * (1 - 0.0005);
         }
         // Calculate potential profit
         const costToBuy = amountIn * buyPrice;
