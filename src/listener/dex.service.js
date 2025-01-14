@@ -5,10 +5,6 @@ import { swapService } from "./index.js";
 import { config } from "../config.js";
 import { decoderUtils, feesUtils, providerUtils } from "../utils/index.js";
 
-const MIN_PROFIT_THRESHOLD = 0.001; // 0.1% minimum profit threshold
-const AMOUNT_IN_ETH = "0.00003";
-const AMOUNT_IN_USDC = "0.1";
-
 export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) => {
     try {
         const [uniswapPool, pancakePool] = await Promise.all([
@@ -41,13 +37,22 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
             console.time("execution time");
             console.log(`🚨 Arbitrage opportunity found! Executing trades... ${grossProfit}`);
 
+            const provider = providerUtils.getProvider(network);
+
+            const wallet = new ethers.Wallet(config.MAIN_ADDRESS_PRIVATE_KEY, provider);
+
+            const tokenInContract = new ethers.Contract(tokenIn, config.ERC20_ABI, wallet);
+            const tokenOutContract = new ethers.Contract(tokenOut, config.ERC20_ABI, wallet);
+
             // Execute buy trade
             const buyTrade = await swapTokens({
                 network,
-                tokenIn,
-                tokenOut,
+                tokenInContract,
+                tokenOutContract,
                 amountIn,
                 dex: buyDex,
+                provider,
+                wallet,
             });
 
             if (!buyTrade?.receipt) {
@@ -57,10 +62,12 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
             // Execute sell trade
             const sellTrade = await swapTokens({
                 network,
-                tokenIn: tokenOut, // Reversed for sell
-                tokenOut: tokenIn, // Reversed for sell
+                tokenInContract: tokenOutContract,
+                tokenOutContract: tokenInContract,
                 amountIn: buyTrade.amountOut, // Use actual received amount
                 dex: sellDex,
+                provider,
+                wallet,
             });
 
             const totalGasSpent = parseFloat(buyTrade.totalGasSpentEth) + parseFloat(sellTrade.totalGasSpentEth);
@@ -98,14 +105,13 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
 };
 // monitorPrices({ network: "base" }).then((res) => console.log(res));
 
-export const swapTokens = async ({ network, tokenIn, tokenOut, amountIn, dex }) => {
+export const swapTokens = async ({ network, tokenInContract, tokenOutContract, amountIn, dex, provider, wallet }) => {
     try {
-        const provider = providerUtils.getProvider(network);
-        // const provider = providerUtils.getDefaultProvider(network);
-        const wallet = new ethers.Wallet(config.MAIN_ADDRESS_PRIVATE_KEY, provider);
+        if (!provider) provider = providerUtils.getProvider(network);
+        if (!wallet) wallet = new ethers.Wallet(config.MAIN_ADDRESS_PRIVATE_KEY, provider);
 
-        if (!tokenIn) throw new Error("TokenIn address is required");
-        if (!tokenOut) throw new Error("TokenOut address is required");
+        if (!tokenInContract) throw new Error("TokenIn address is required");
+        if (!tokenOutContract) throw new Error("TokenOut address is required");
         if (!amountIn) throw new Error("AmountIn is required");
         if (!network) throw new Error("Network is required");
         if (!dex) throw new Error("Dex is required");
@@ -114,8 +120,8 @@ export const swapTokens = async ({ network, tokenIn, tokenOut, amountIn, dex }) 
 
         if (!routerAddress) throw new Error("Router address not found for the specified dex.");
 
-        const tokenInContract = new ethers.Contract(tokenIn, config.ERC20_ABI, wallet);
-        const tokenOutContract = new ethers.Contract(tokenOut, config.ERC20_ABI, wallet);
+        const tokenIn = tokenInContract.target;
+        const tokenOut = tokenOutContract.target;
 
         const [
             tokenInDecimals,
