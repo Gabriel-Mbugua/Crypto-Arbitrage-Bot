@@ -12,7 +12,7 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
             uniswapPools.getPool({ network, dex: "pancake", tokenIn, tokenOut, fee: 100 }),
         ]);
 
-        const MIN_PROFIT_THRESHOLD = 0.05;
+        const MIN_PROFIT_THRESHOLD = 0.06;
 
         // Determine which DEX to buy from and sell to
         let buyDex = "uniswap";
@@ -28,17 +28,25 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
         }
 
         const grossProfit = (sellPrice - buyPrice) * amountIn;
-        // Execute trades if profitable
-        if (grossProfit > MIN_PROFIT_THRESHOLD) {
-            console.time("execution time");
-            console.log(`🚨 Arbitrage opportunity found! Executing trades... ${grossProfit}`);
 
+        if (grossProfit > MIN_PROFIT_THRESHOLD) {
+            // Execute trades if profitable
             const provider = providerUtils.getProvider(network);
 
             const wallet = new ethers.Wallet(config.MAIN_ADDRESS_PRIVATE_KEY, provider);
 
             const tokenInContract = new ethers.Contract(tokenIn, config.ERC20_ABI, wallet);
             const tokenOutContract = new ethers.Contract(tokenOut, config.ERC20_ABI, wallet);
+
+            const [tokenInDecimals, tokenOutDecimals] = await Promise.all([
+                tokenInContract.decimals(),
+                tokenOutContract.decimals(),
+            ]);
+
+            const initialBalanceInWei = await tokenInContract.balanceOf(wallet.address);
+            const initialBalance = ethers.formatUnits(initialBalanceInWei, tokenInDecimals);
+            console.time("execution time");
+            console.log(`🚨 Arbitrage opportunity found! Executing trades... ${grossProfit}`);
 
             // Execute buy trade
             const buyTrade = await swapTokens({
@@ -72,7 +80,9 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
             const decodedBuy = decoderUtils.parseERC20Logs(buyTrade.receipt);
             const decodedSell = decoderUtils.parseERC20Logs(sellTrade.receipt);
 
-            // buyTrade.decodedLogs = decodedBuy;
+            const finalBalanceInWei = await tokenInContract.balanceOf(wallet.address);
+            const finalBalance = ethers.formatUnits(finalBalanceInWei, tokenOutDecimals);
+            const actualProfit = finalBalance - initialBalance - totalGasSpent;
             // sellTrade.decodedLogs = decodedSell;
 
             console.timeEnd("execution time");
@@ -85,6 +95,9 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
                 buyPrice,
                 sellPrice,
                 amountIn,
+                startBalance: initialBalance.toString(),
+                endBalance: finalBalance.toString(),
+                actualProfit,
                 grossProfit,
                 totalGasSpent,
                 netProfit,
