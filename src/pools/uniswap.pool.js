@@ -61,8 +61,8 @@ export const getPoolPrices = async ({ network, pair, dex }) => {
 
 // getPoolPrices({ network: "base", pair: "eth_usdc" }).then((res) => console.log(res));
 
-export const getPool = async ({ network, dex, tokenIn, tokenOut, fee }) => {
-    const provider = providerUtils.getProvider(network);
+export const getPool = async ({ provider, network, dex, tokenIn, tokenOut, fee }) => {
+    if (!provider) provider = providerUtils.getProvider(network);
 
     const factoryAddress = config.dexFactories?.[dex]?.[network];
     if (!factoryAddress) throw new Error("Factory address not found");

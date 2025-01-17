@@ -7,9 +7,11 @@ import { decoderUtils, feesUtils, providerUtils } from "../utils/index.js";
 
 export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) => {
     try {
+        const provider = providerUtils.getProvider(network);
+
         const [uniswapPool, pancakePool] = await Promise.all([
-            uniswapPools.getPool({ network, dex: "uniswap", tokenIn, tokenOut, fee: 100 }),
-            uniswapPools.getPool({ network, dex: "pancake", tokenIn, tokenOut, fee: 100 }),
+            uniswapPools.getPool({ provider, network, dex: "uniswap", tokenIn, tokenOut, fee: 100 }),
+            uniswapPools.getPool({ provider, network, dex: "pancake", tokenIn, tokenOut, fee: 100 }),
         ]);
 
         const MIN_PROFIT_THRESHOLD = 0.06;
@@ -31,7 +33,6 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
 
         if (grossProfit > MIN_PROFIT_THRESHOLD) {
             // Execute trades if profitable
-            const provider = providerUtils.getProvider(network);
 
             const wallet = new ethers.Wallet(config.MAIN_ADDRESS_PRIVATE_KEY, provider);
 

@@ -34,7 +34,7 @@ const startBot = () => {
     // Start immediate first run
     monitorArbitrage();
     // Set up interval
-    monitoringInterval = setInterval(monitorArbitrage, 60 * 1000);
+    monitoringInterval = setInterval(monitorArbitrage, 30 * 1000);
 };
 
 app.get("/", (req, res) => {
