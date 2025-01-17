@@ -27,10 +27,7 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
             sellPrice = uniswapPool.price * (1 - 0.0001);
         }
 
-        const costToBuy = amountIn * buyPrice;
-        const sellReturn = amountIn * sellPrice;
-        const grossProfit = sellReturn - costToBuy;
-
+        const grossProfit = (sellPrice - buyPrice) * amountIn;
         // Execute trades if profitable
         if (grossProfit > MIN_PROFIT_THRESHOLD) {
             console.time("execution time");
@@ -75,10 +72,11 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
             const decodedBuy = decoderUtils.parseERC20Logs(buyTrade.receipt);
             const decodedSell = decoderUtils.parseERC20Logs(sellTrade.receipt);
 
-            buyTrade.decodedLogs = decodedBuy;
-            sellTrade.decodedLogs = decodedSell;
+            // buyTrade.decodedLogs = decodedBuy;
+            // sellTrade.decodedLogs = decodedSell;
 
             console.timeEnd("execution time");
+            console.log({ decodedBuy, decodedSell });
 
             return {
                 timestamp: new Date().toISOString(),
