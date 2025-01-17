@@ -61,8 +61,6 @@ export const getPoolPrices = async ({ network, pair, dex }) => {
 
 // getPoolPrices({ network: "base", pair: "eth_usdc" }).then((res) => console.log(res));
 
-// fee for uniswap is 3000
-// fee for pancake is 2500
 export const getPool = async ({ network, dex, tokenIn, tokenOut, fee }) => {
     const provider = providerUtils.getProvider(network);
 

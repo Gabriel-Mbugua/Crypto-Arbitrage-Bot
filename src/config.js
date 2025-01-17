@@ -60,6 +60,5 @@ export const config = {
         "function allowance(address owner, address spender) view returns (uint256)",
         "function symbol() view returns (string memory)",
         "function deposit() external payable",
-        ,
     ],
 };

@@ -8,26 +8,25 @@ import { decoderUtils, feesUtils, providerUtils } from "../utils/index.js";
 export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) => {
     try {
         const [uniswapPool, pancakePool] = await Promise.all([
-            uniswapPools.getPool({ network, dex: "uniswap", tokenIn, tokenOut, fee: 500 }),
+            uniswapPools.getPool({ network, dex: "uniswap", tokenIn, tokenOut, fee: 100 }),
             uniswapPools.getPool({ network, dex: "pancake", tokenIn, tokenOut, fee: 100 }),
         ]);
 
-        const priceDiff = Math.abs(uniswapPool.price - pancakePool.price);
-        const MIN_PROFIT_THRESHOLD = 0.1;
+        const MIN_PROFIT_THRESHOLD = 0.05;
 
         // Determine which DEX to buy from and sell to
         let buyDex = "uniswap";
         let sellDex = "pancake";
-        let buyPrice = uniswapPool.price * (1 + 0.0005);
+        let buyPrice = uniswapPool.price * (1 + 0.0001);
         let sellPrice = pancakePool.price * (1 - 0.0001);
 
         if (pancakePool.price < uniswapPool.price) {
             buyDex = "pancake";
             sellDex = "uniswap";
             buyPrice = pancakePool.price * (1 + 0.0001);
-            sellPrice = uniswapPool.price * (1 - 0.0005);
+            sellPrice = uniswapPool.price * (1 - 0.0001);
         }
-        // Calculate potential profit
+
         const costToBuy = amountIn * buyPrice;
         const sellReturn = amountIn * sellPrice;
         const grossProfit = sellReturn - costToBuy;
@@ -76,8 +75,8 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
             const decodedBuy = decoderUtils.parseERC20Logs(buyTrade.receipt);
             const decodedSell = decoderUtils.parseERC20Logs(sellTrade.receipt);
 
-            buyTrade.receipt.decodedLogs = decodedBuy;
-            sellTrade.receipt.decodedLogs = decodedSell;
+            buyTrade.decodedLogs = decodedBuy;
+            sellTrade.decodedLogs = decodedSell;
 
             console.timeEnd("execution time");
 
@@ -92,8 +91,8 @@ export const monitorPrices = async ({ network, tokenIn, tokenOut, amountIn }) =>
                 totalGasSpent,
                 netProfit,
                 trades: {
-                    buy: buyTrade.receipt,
-                    sell: sellTrade.receipt,
+                    buy: buyTrade,
+                    sell: sellTrade,
                 },
             };
         }
